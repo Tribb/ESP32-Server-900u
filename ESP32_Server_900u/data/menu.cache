@@ -1,0 +1,24 @@
+CACHE MANIFEST 
+# 30/01/2024
+
+goldhen.bin
+alert.mjs
+chain.mjs
+config.mjs
+constants.mjs
+exploit.mjs
+int64.js
+int64.mjs
+kexploit.js
+mem.mjs
+memtools.mjs
+offset.mjs
+rop.js
+rw.mjs
+utils.mjs
+
+NETWORK:
+*
+
+SETTINGS:
+prefer-online:

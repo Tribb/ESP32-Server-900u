@@ -1,0 +1,194 @@
+<html manifest="./menu.cache">
+<head>
+	<meta http-equiv="Cache-Control" max-age=120 />
+    <title>PS4-Hack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+    	body {
+    		background-color: #1d1b29;
+    		color: #fade91;
+    	}
+    	.lds-ellipsis {
+    		display: inline-block;
+    		position: relative;
+    		width: 50px;
+    		height: 50px;
+    	}
+    	.lds-ellipsis div {
+    		position: fixed;
+    		top: 33px;
+    		width: 16px;
+    		height: 16px;
+    		border-radius: 50%;
+    		animation-timing-function: cubic-bezier(0, 1, 1, 0);
+    	}
+    	.lds-ellipsis div:nth-child(1) {
+    		left: 8px;
+    		animation: lds-ellipsis1 0.6s infinite;
+    		background: #ff0000;
+    	}
+    	.lds-ellipsis div:nth-child(2) {
+    		left: 8px;
+    		animation: lds-ellipsis2 0.6s infinite;
+    		background: #ffffff;
+    	}
+    	.lds-ellipsis div:nth-child(3) {
+    		left: 32px;
+    		animation: lds-ellipsis2 0.6s infinite;
+    		background: #0000ff;
+    	}
+    	.lds-ellipsis div:nth-child(4) {
+    		left: 56px;
+    		animation: lds-ellipsis3 0.6s infinite;
+    	}
+    	@keyframes lds-ellipsis1 {
+    		0% {
+    			transform: scale(0);
+    		}
+    		100% {
+    			transform: scale(1);
+    		}
+    	}
+    	@keyframes lds-ellipsis3 {
+    		0% {
+    			transform: scale(1);
+    		}
+    		100% {
+    			transform: scale(0);
+    		}
+    	}
+    	@keyframes lds-ellipsis2 {
+    		0% {
+    			transform: translate(0, 0);
+    		}
+    		100% {
+    			transform: translate(28px, 0);
+    		}
+    	}
+    	.center {
+    		position: fixed;
+    		top: 50%;
+    		left: 50%;
+    		transform: translate(-50%, -50%);
+    	}
+    	.center2 {
+    		position: fixed;
+    		font-size: 30px;
+    		top: 45%;
+    		left: 50%;
+    		transform: translate(-50%, -50%);
+    	}
+    </style>
+    <script>
+    		var payloadFile = 'goldhen.bin';
+    		var payloadData = "";
+    		var delaytime = 3000; //time for the usb drive to mount.
+    		
+    		var timedelay = new XMLHttpRequest();
+    		timedelay.open("POST", "./getusbwait", true);
+    		timedelay.onload=function(){
+    			delaytime = parseInt(timedelay.responseText);
+    		}
+    		timedelay.send(null);
+    		
+    		function deepsleep() {
+    			var getpl = new XMLHttpRequest();
+    			getpl.open("POST", "./deepsleep", true);
+    			getpl.send(null);
+    		}
+    		
+    		function enableUSB() {
+        	var req = new XMLHttpRequest();
+        	req.open("POST", "./usbon", true);
+        	req.send(null);
+        }
+        
+        function disableUSB() {
+        	var getpl = new XMLHttpRequest();
+        	getpl.open("POST", "./usboff", true);
+        	getpl.send(null);
+        }
+    		
+    		function loadPayloadData() // preload payload data
+    		{
+    			if (payloadFile)
+    			{
+    				var xhr = new XMLHttpRequest();
+    				xhr.open('GET', payloadFile, true);
+    				xhr.overrideMimeType('text/plain; charset=x-user-defined');
+    				xhr.onload = function(e) {
+    					if (this.status == 200) {
+    						payloadData = this.response;
+    					}
+    					else {
+    						alert('Payload not found');
+    					}};
+    				xhr.send();
+    			}
+    		}
+    		
+    		function toggletext() {
+        	var top = document.getElementById("first");
+        	var bottom = document.getElementById("second");
+
+        	if (top.style.display == "block")
+        	{
+        		top.style.display = "none";
+        		bottom.style.display = "block";
+        	}
+        }
+        
+        function toggletext2() {
+        	var top = document.getElementById("third");
+        	var bottom = document.getElementById("second");
+
+        	if (top.style.display == "none")
+        	{
+        		bottom.style.display = "none";
+        		top.style.display = "block";
+        	}
+        }
+    		
+    		function injectPayload() //dynamic payload inject - stooged
+    		{
+    			if (payloadData.length > 0)
+    			{
+    				var payload_buffer = chain.syscall(477, new int64(0x26200000, 0x9), 0x300000, 7, 0x41000, -1, 0);
+    				var bufLen = payloadData.length;
+    				var payload_loader = p.malloc32(bufLen);
+    				var loader_writer = payload_loader.backing;
+    				for(var i=0;i<bufLen/4;i++){
+    					var hxVal = payloadData.slice(i*4,4+(i*4)).split("").reverse().join("").split("").map(function(s){return("0000" + s.charCodeAt(0).toString(16)).slice(-2);}).join("");
+    					loader_writer[i] = parseInt(hxVal, 16);
+    				}
+    				chain.syscall(74, payload_loader, bufLen, (0x1 | 0x2 | 0x4));
+    				var pthread = p.malloc(0x10);
+    				chain.call(libKernelBase.add32(OFFSET_lk_pthread_create), pthread, 0x0, payload_loader, payload_buffer);
+    				setTimeout(toggletext2, 100); //wait for a few milliseconds
+    				//wait 30 seconds before turning off the dongle to ensure goldhen is fully loaded to prevent a crash...
+    				setTimeout(deepsleep, 30000);
+    			}
+    			else {
+    				alert('Unable to inject the payload. Close the browser and try again!');
+    			}
+    		}
+
+        function awaitpl() {
+            loadPayloadData();
+            toggletext();
+            setTimeout(injectPayload, delaytime);
+        }
+    </script>
+    <script src="./int64.js"></script>
+    <script src="./rop.js"></script>
+    <script src="./kexploit.js"></script>
+    <script type=module src="./alert.mjs"></script>
+</head>
+</html>
+
+<body>
+	<div id="first" style="display:block;" class="center2"><font color="#f57842"><b>Exploiting the PS4 Please Wait!</b></font></div>
+	<div class="center"> <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div></div></div>
+	<div id="second" style="display:none;" class="center2"><font color="#b3f542"><b>Injecting Goldhen!</b></font></div>
+	<div id="third" style="display:none;" class="center2"><font color="#00ff42"><b>Goldhen Injected. Press PS button to exit</b></font></div>
+</body>
